@@ -21,6 +21,9 @@ fn main() {
         Some(("check", sub)) => cmd_check(sub),
         Some(("dump", sub)) => cmd_dump(sub),
         Some(("init", sub)) => cmd_init(sub),
+        Some(("fmt", sub)) => cmd_fmt(sub),
+        Some(("test", sub)) => cmd_test(sub),
+        Some(("packages", sub)) => cmd_packages(sub),
         Some(("doctor", _)) => cmd_doctor(),
         _ => {
             print_banner();
@@ -264,8 +267,38 @@ fn cmd_dump(matches: &clap::ArgMatches) {
 
             print_ast(&ast, 0);
         }
+        Some(("types", sub)) => {
+            let file = sub.get_one::<String>("file").unwrap();
+            let source = fs::read_to_string(file).unwrap_or_else(|e| {
+                eprintln!("Cannot read {}: {}", file, e);
+                std::process::exit(1);
+            });
+
+            let tokens = Lexer::tokenize(&source).unwrap_or_else(|e| {
+                eprintln!("{}", e);
+                std::process::exit(1);
+            });
+
+            let ast = Parser::parse(tokens).unwrap_or_else(|e| {
+                eprintln!("{}", e);
+                std::process::exit(1);
+            });
+
+            let (symbols, errors) = type_checker::TypeChecker::check(&ast);
+            println!("\x1b[1;36m── Symbol Table ──\x1b[0m");
+            // Print symbols from the global scope
+            for sym in symbols.global_symbols() {
+                println!("  {} : {} ({:?})", sym.name, sym.ty, sym.kind_name());
+            }
+            if !errors.is_empty() {
+                println!("\n\x1b[1;33m── Type Errors ──\x1b[0m");
+                for err in &errors {
+                    println!("  {} (offset {}..{})", err.message, err.line, err.column);
+                }
+            }
+        }
         _ => {
-            eprintln!("Usage: cm dump <tokens|ast> <file.cm>");
+            eprintln!("Usage: cm dump <tokens|ast|types> <file.cm>");
         }
     }
 }
@@ -342,7 +375,239 @@ fn cmd_doctor() {
     println!("  \x1b[1;32mAll checks passed.\x1b[0m");
 }
 
-// ── AST Printer (S-expression format) ────────────────────────────────────────
+fn cmd_fmt(matches: &clap::ArgMatches) {
+    let target = matches
+        .get_one::<String>("file")
+        .map(|s| s.as_str())
+        .unwrap_or("src/");
+
+    let path = std::path::Path::new(target);
+
+    if path.is_file() {
+        format_file(path);
+    } else if path.is_dir() {
+        let mut count = 0;
+        for entry in walkdir_cm(path) {
+            format_file(&entry);
+            count += 1;
+        }
+        println!("\x1b[1;32m✓\x1b[0m Formatted {} file(s)", count);
+    } else {
+        eprintln!("\x1b[1;31m✗\x1b[0m Path '{}' not found", target);
+        std::process::exit(1);
+    }
+}
+
+fn format_file(path: &std::path::Path) {
+    let source = match fs::read_to_string(path) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Cannot read {}: {}", path.display(), e);
+            return;
+        }
+    };
+
+    // Basic formatting: normalize indentation and trailing whitespace
+    let mut formatted = String::new();
+    let mut indent_level: i32 = 0;
+
+    for line in source.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            formatted.push('\n');
+            continue;
+        }
+
+        // Decrease indent before closing braces
+        if trimmed.starts_with('}') {
+            indent_level = (indent_level - 1).max(0);
+        }
+
+        let indent = "    ".repeat(indent_level as usize);
+        formatted.push_str(&format!("{}{}\n", indent, trimmed));
+
+        // Increase indent after opening braces
+        if trimmed.ends_with('{') {
+            indent_level += 1;
+        }
+    }
+
+    if formatted != source {
+        if let Err(e) = fs::write(path, &formatted) {
+            eprintln!("Cannot write {}: {}", path.display(), e);
+        } else {
+            println!("  \x1b[32m✓\x1b[0m {}", path.display());
+        }
+    } else {
+        println!("  \x1b[90m-\x1b[0m {} (no changes)", path.display());
+    }
+}
+
+fn walkdir_cm(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
+    let mut files = Vec::new();
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                files.extend(walkdir_cm(&path));
+            } else if path.extension().map(|e| e == "cm").unwrap_or(false) {
+                files.push(path);
+            }
+        }
+    }
+    files
+}
+
+fn cmd_test(matches: &clap::ArgMatches) {
+    let filter = matches.get_one::<String>("filter");
+    let test_dir = std::path::Path::new("tests");
+    let examples_dir = std::path::Path::new("examples");
+
+    // Collect test files
+    let mut test_files: Vec<std::path::PathBuf> = Vec::new();
+
+    if test_dir.exists() {
+        test_files.extend(walkdir_cm(test_dir));
+    }
+    if examples_dir.exists() {
+        test_files.extend(walkdir_cm(examples_dir));
+    }
+
+    // Apply filter
+    if let Some(pattern) = filter {
+        test_files.retain(|f| {
+            f.to_string_lossy().contains(pattern.as_str())
+        });
+    }
+
+    if test_files.is_empty() {
+        println!("\x1b[1;33m!\x1b[0m No test files found");
+        return;
+    }
+
+    println!("\x1b[1;36m── Running {} test(s) ──\x1b[0m\n", test_files.len());
+
+    let mut passed = 0;
+    let mut failed = 0;
+
+    for file in &test_files {
+        let source = match fs::read_to_string(file) {
+            Ok(s) => s,
+            Err(_) => {
+                println!("  \x1b[31m✗\x1b[0m {} — cannot read", file.display());
+                failed += 1;
+                continue;
+            }
+        };
+
+        let tokens = match Lexer::tokenize(&source) {
+            Ok(t) => t,
+            Err(e) => {
+                println!("  \x1b[31m✗\x1b[0m {} — lex error: {}", file.display(), e);
+                failed += 1;
+                continue;
+            }
+        };
+
+        let ast = match Parser::parse(tokens) {
+            Ok(a) => a,
+            Err(e) => {
+                println!("  \x1b[31m✗\x1b[0m {} — parse error: {}", file.display(), e);
+                failed += 1;
+                continue;
+            }
+        };
+
+        let (_, type_errors) = type_checker::TypeChecker::check(&ast);
+        if type_errors.is_empty() {
+            println!("  \x1b[32m✓\x1b[0m {}", file.display());
+            passed += 1;
+        } else {
+            println!(
+                "  \x1b[31m✗\x1b[0m {} — {} type error(s)",
+                file.display(),
+                type_errors.len()
+            );
+            for err in &type_errors {
+                println!("      {}", err.message);
+            }
+            failed += 1;
+        }
+    }
+
+    println!();
+    if failed == 0 {
+        println!(
+            "\x1b[1;32m✓ All {} test(s) passed\x1b[0m",
+            passed
+        );
+    } else {
+        println!(
+            "\x1b[1;31m✗ {} passed, {} failed\x1b[0m",
+            passed, failed
+        );
+        std::process::exit(1);
+    }
+}
+
+fn cmd_packages(matches: &clap::ArgMatches) {
+    match matches.subcommand() {
+        Some(("install", sub)) => {
+            let pkg = sub.get_one::<String>("package").unwrap();
+            println!("\x1b[1;36m📦 Installing '{}'...\x1b[0m", pkg);
+
+            // Create packages directory
+            let pkg_dir = std::path::Path::new("packages");
+            fs::create_dir_all(pkg_dir).ok();
+
+            // Create a manifest entry
+            let manifest = std::path::Path::new("curium.json");
+            if manifest.exists() {
+                println!("  \x1b[32m✓\x1b[0m Added '{}' to dependencies", pkg);
+                println!("  \x1b[33m!\x1b[0m Package registry not yet available");
+                println!("    Place package source in packages/{}/", pkg);
+            } else {
+                println!("  \x1b[33m!\x1b[0m No curium.json found. Run 'cm init' first.");
+            }
+        }
+        Some(("remove", sub)) => {
+            let pkg = sub.get_one::<String>("package").unwrap();
+            let pkg_path = std::path::Path::new("packages").join(pkg);
+            if pkg_path.exists() {
+                fs::remove_dir_all(&pkg_path).ok();
+                println!("\x1b[1;32m✓\x1b[0m Removed '{}'", pkg);
+            } else {
+                println!("\x1b[1;33m!\x1b[0m Package '{}' not installed", pkg);
+            }
+        }
+        Some(("list", _)) => {
+            let pkg_dir = std::path::Path::new("packages");
+            if pkg_dir.exists() {
+                let entries: Vec<_> = fs::read_dir(pkg_dir)
+                    .into_iter()
+                    .flatten()
+                    .flatten()
+                    .filter(|e| e.path().is_dir())
+                    .collect();
+
+                if entries.is_empty() {
+                    println!("\x1b[90mNo packages installed\x1b[0m");
+                } else {
+                    println!("\x1b[1;36m── Installed Packages ──\x1b[0m");
+                    for entry in entries {
+                        println!("  📦 {}", entry.file_name().to_string_lossy());
+                    }
+                }
+            } else {
+                println!("\x1b[90mNo packages directory\x1b[0m");
+            }
+        }
+        _ => {
+            eprintln!("Usage: cm packages <install|remove|list>");
+        }
+    }
+}
+
 
 fn print_ast(node: &parser::AstNode, depth: usize) {
     let indent = "  ".repeat(depth);

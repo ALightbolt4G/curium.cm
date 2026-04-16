@@ -10,6 +10,20 @@ pub struct Symbol {
     pub kind: SymbolKind,
 }
 
+impl Symbol {
+    pub fn kind_name(&self) -> &'static str {
+        match &self.kind {
+            SymbolKind::Variable => "variable",
+            SymbolKind::Function { .. } => "function",
+            SymbolKind::Struct { .. } => "struct",
+            SymbolKind::Enum { .. } => "enum",
+            SymbolKind::Trait { .. } => "trait",
+            SymbolKind::Method => "method",
+            SymbolKind::Parameter => "parameter",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum SymbolKind {
     Variable,
@@ -149,6 +163,15 @@ impl SymbolTable {
 
     pub fn depth(&self) -> usize {
         self.scopes.len()
+    }
+
+    /// Return all symbols in the global (bottom) scope.
+    pub fn global_symbols(&self) -> Vec<&Symbol> {
+        if let Some(scope) = self.scopes.first() {
+            scope.symbols.values().collect()
+        } else {
+            Vec::new()
+        }
     }
 }
 

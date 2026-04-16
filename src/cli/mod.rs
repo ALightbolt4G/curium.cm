@@ -36,6 +36,12 @@ pub fn build_cli() -> Command {
                         .long("cc")
                         .help("C compiler to use")
                         .default_value("gcc"),
+                )
+                .arg(
+                    Arg::new("check")
+                        .long("check")
+                        .help("Type-check before code generation")
+                        .action(ArgAction::SetTrue),
                 ),
         )
         .subcommand(
@@ -80,6 +86,16 @@ pub fn build_cli() -> Command {
                                 .required(true)
                                 .index(1),
                         ),
+                )
+                .subcommand(
+                    Command::new("types")
+                        .about("Print resolved types for all symbols")
+                        .arg(
+                            Arg::new("file")
+                                .help("The .cm source file")
+                                .required(true)
+                                .index(1),
+                        ),
                 ),
         )
         .subcommand(
@@ -97,17 +113,49 @@ pub fn build_cli() -> Command {
                 .about("Format Curium source files")
                 .arg(
                     Arg::new("file")
-                        .help("File to format")
-                        .required(true)
+                        .help("File or directory to format (default: src/)")
                         .index(1),
                 ),
         )
         .subcommand(
             Command::new("test")
-                .about("Run project tests"),
+                .about("Run project tests")
+                .arg(
+                    Arg::new("filter")
+                        .help("Filter test files by pattern")
+                        .index(1),
+                ),
         )
         .subcommand(
             Command::new("doctor")
                 .about("Diagnose project health and environment"),
+        )
+        .subcommand(
+            Command::new("packages")
+                .about("Manage Curium packages")
+                .subcommand(
+                    Command::new("install")
+                        .about("Install a package")
+                        .arg(
+                            Arg::new("package")
+                                .help("Package name (e.g. std/json)")
+                                .required(true)
+                                .index(1),
+                        ),
+                )
+                .subcommand(
+                    Command::new("remove")
+                        .about("Remove a package")
+                        .arg(
+                            Arg::new("package")
+                                .help("Package name to remove")
+                                .required(true)
+                                .index(1),
+                        ),
+                )
+                .subcommand(
+                    Command::new("list")
+                        .about("List installed packages"),
+                ),
         )
 }
