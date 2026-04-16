@@ -1,0 +1,25 @@
+fn fibonacci(n: i32) -> i32 {
+    if n <= 1 {
+        return n;
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+fn fibonacci_iter(n: i32) -> i32 {
+    let a: i32 = 0;
+    mut b: i32 = 1;
+    mut i: i32 = 0;
+    while i < n {
+        let temp: i32 = b;
+        b = a + b;
+        // a = temp; — TODO: assignment needs fixing
+        i += 1;
+    }
+    return a;
+}
+
+fn main() -> i32 {
+    let result: i32 = fibonacci(10);
+    println("Fibonacci(10) computed!");
+    return 0;
+}

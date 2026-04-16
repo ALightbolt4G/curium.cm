@@ -1,0 +1,17 @@
+[package]
+name = "curium"
+version = "5.0.0"
+edition = "2021"
+description = "The Curium programming language compiler — transpiles .cm to C11"
+license = "MIT"
+repository = "https://github.com/ALightbolt4G/curium.cm"
+
+[[bin]]
+name = "cm"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+ariadne = "0.4"
+
+[dev-dependencies]
