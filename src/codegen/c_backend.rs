@@ -9,6 +9,7 @@ pub struct CGenerator {
     needs_curium_arena: bool,
     needs_curium_dyn: bool,
     needs_curium_gc: bool,
+    needs_curium_strnum: bool,
 }
 
 impl CGenerator {
@@ -21,6 +22,7 @@ impl CGenerator {
             needs_curium_arena: false,
             needs_curium_dyn: false,
             needs_curium_gc: false,
+            needs_curium_strnum: false,
         }
     }
 
@@ -169,6 +171,10 @@ impl CGenerator {
         match ty {
             Type::String | Type::Str => self.needs_curium_string = true,
             Type::Dyn => self.needs_curium_dyn = true,
+            Type::Strnum => {
+                self.needs_curium_strnum = true;
+                self.needs_curium_string = true; // strnum uses string
+            }
             Type::Ptr(inner) | Type::Array(inner) | Type::Optional(inner) => {
                 self.scan_type_features(inner);
             }
@@ -257,6 +263,29 @@ impl CGenerator {
             self.emit_line("        void* ptr_val;");
             self.emit_line("    };");
             self.emit_line("} curium_dyn_t;");
+            self.emit_line("");
+        }
+
+        if self.needs_curium_strnum {
+            self.emit_line("/* ── Curium Strnum (dual string/number) ── */");
+            self.emit_line("typedef struct curium_strnum_t {");
+            self.emit_line("    enum { STRNUM_INT, STRNUM_FLOAT, STRNUM_STRING } kind;");
+            self.emit_line("    union {");
+            self.emit_line("        int64_t i;");
+            self.emit_line("        double f;");
+            self.emit_line("        curium_string_t* s;");
+            self.emit_line("    };");
+            self.emit_line("} curium_strnum_t;");
+            self.emit_line("");
+            self.emit_line("static curium_strnum_t curium_strnum_from_int(int64_t v) {");
+            self.emit_line("    curium_strnum_t sn; sn.kind = STRNUM_INT; sn.i = v; return sn;");
+            self.emit_line("}");
+            self.emit_line("static curium_strnum_t curium_strnum_from_float(double v) {");
+            self.emit_line("    curium_strnum_t sn; sn.kind = STRNUM_FLOAT; sn.f = v; return sn;");
+            self.emit_line("}");
+            self.emit_line("static curium_strnum_t curium_strnum_from_string(curium_string_t* v) {");
+            self.emit_line("    curium_strnum_t sn; sn.kind = STRNUM_STRING; sn.s = v; return sn;");
+            self.emit_line("}");
             self.emit_line("");
         }
 

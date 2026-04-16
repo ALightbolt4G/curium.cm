@@ -1,0 +1,39 @@
+// Curium v5.0 — Struct and Enum example
+// Exercises the type checker and C11 codegen
+
+struct Point {
+    x: f64;
+    y: f64;
+}
+
+enum Shape {
+    Circle(f64),
+    Rectangle(f64, f64),
+}
+
+impl Point {
+    fn distance(self, other: Point) -> f64 {
+        let dx: f64 = self.x - other.x;
+        let dy: f64 = self.y - other.y;
+        return 0.0;
+    }
+}
+
+fn area(shape: Shape) -> f64 {
+    match shape {
+        Shape::Circle => {
+            return 3.14159;
+        }
+        Shape::Rectangle => {
+            return 1.0;
+        }
+    }
+}
+
+fn main() -> i32 {
+    let p1 = Point { x: 1.0, y: 2.0 };
+    let p2 = Point { x: 4.0, y: 6.0 };
+
+    println("Curium structs and enums work!");
+    return 0;
+}

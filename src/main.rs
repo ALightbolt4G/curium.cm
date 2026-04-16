@@ -3,6 +3,7 @@ mod parser;
 mod codegen;
 mod error;
 mod cli;
+mod type_checker;
 
 use std::fs;
 use std::process::Command as ProcessCommand;
@@ -62,6 +63,15 @@ fn cmd_build(matches: &clap::ArgMatches) {
             std::process::exit(1);
         }
     };
+
+    // Type check (warnings only — non-fatal for bootstrap compatibility)
+    let (_, type_errors) = type_checker::TypeChecker::check(&ast);
+    for err in &type_errors {
+        eprintln!(
+            "\x1b[1;33mwarning\x1b[0m: {} ({}:{}:{})",
+            err.message, file, err.line, err.column
+        );
+    }
 
     // Codegen
     let c_code = CGenerator::generate(&ast);
@@ -187,7 +197,7 @@ fn cmd_check(matches: &clap::ArgMatches) {
         }
     };
 
-    let _ast = match Parser::parse(tokens) {
+    let ast = match Parser::parse(tokens) {
         Ok(a) => a,
         Err(e) => {
             error::emit_parse_error(&source, file, 0, &e);
@@ -195,7 +205,23 @@ fn cmd_check(matches: &clap::ArgMatches) {
         }
     };
 
-    println!("\x1b[1;32m✓\x1b[0m {} — no errors", file);
+    // Type check
+    let (_, type_errors) = type_checker::TypeChecker::check(&ast);
+    if type_errors.is_empty() {
+        println!("\x1b[1;32m✓\x1b[0m {} — no errors", file);
+    } else {
+        for err in &type_errors {
+            eprintln!(
+                "\x1b[1;31merror\x1b[0m: {} ({}:{}:{})",
+                err.message, file, err.line, err.column
+            );
+        }
+        eprintln!(
+            "\x1b[1;31m✗\x1b[0m {} error(s) found",
+            type_errors.len()
+        );
+        std::process::exit(1);
+    }
 }
 
 fn cmd_dump(matches: &clap::ArgMatches) {

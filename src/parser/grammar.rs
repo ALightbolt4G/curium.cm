@@ -177,10 +177,12 @@ impl Parser {
                 is_pub: field_pub,
             });
 
-            if self.check(&TokenKind::Comma) {
+            // Accept ; or , as field delimiter
+            if self.check(&TokenKind::Semi) {
+                self.advance();
+            } else if self.check(&TokenKind::Comma) {
                 self.advance();
             } else if !self.check(&TokenKind::RBrace) {
-                // Allow trailing comma or no comma before }
                 break;
             }
         }
