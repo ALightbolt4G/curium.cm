@@ -121,4 +121,5 @@ UC-035,Phase 6,Package Manager,Ecosystem,Create `cm get` to fetch dependencies,N
 UC-036,Phase 6,Testing Framework,Ecosystem,Create `cm test` standard harness framework,Code with #[test] annotations,Runs tests and reports results,High,Medium
 UC-037,Phase 6,Language Server (LSP),Ecosystem,Create an LSP using compiler typechecker API,Compiler as library,Hover/autocomplete info provided to IDE,Medium,Very High
 UC-038,Phase 6,Code Formatter,Ecosystem,Create `cm fmt` to consistently format `.cm` files,Unformatted code,Code matches AST standard style,Low,High
+UC-039,Phase 5,Binary Independence,Compiler,Compile with --standalone to statically link C runtime dependencies for true binary independence,Run binary on clean host,Binary executes without DLLs,High,Low
 ```

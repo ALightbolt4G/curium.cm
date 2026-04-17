@@ -42,6 +42,12 @@ pub fn build_cli() -> Command {
                         .long("check")
                         .help("Type-check before code generation")
                         .action(ArgAction::SetTrue),
+                )
+                .arg(
+                    Arg::new("standalone")
+                        .long("standalone")
+                        .help("Compile binary independently by statically linking C runtime libraries")
+                        .action(ArgAction::SetTrue),
                 ),
         )
         .subcommand(

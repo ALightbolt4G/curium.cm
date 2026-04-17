@@ -159,8 +159,15 @@ fn cmd_build(matches: &clap::ArgMatches) {
         output.to_string()
     };
 
+    let standalone = matches.get_flag("standalone");
+
+    let mut gcc_args = vec![c_file.clone(), "-o".to_string(), out_exe.clone(), "-lm".to_string()];
+    if standalone {
+        gcc_args.push("-static".to_string());
+    }
+
     let status = ProcessCommand::new(cc)
-        .args([&c_file, "-o", &out_exe, "-lm"])
+        .args(&gcc_args)
         .status();
 
     match status {

@@ -196,6 +196,7 @@ SUBCOMMANDS:
         -o <output>         Output file path (default: output)
         --emit-c            Only output the generated C file
         --cc <compiler>     C compiler to use (default: gcc)
+        --standalone        Statically link C runtime for independent binary output
     run <file>          Build and execute a Curium program
     check <file>        Parse and type-check only (no codegen)
     fmt [file|dir]      Format Curium source files
