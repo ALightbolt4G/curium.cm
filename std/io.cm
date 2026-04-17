@@ -1,0 +1,6 @@
+// std/io
+// Provides standard I/O utilities.
+
+fn print_int(n: i32) -> void {
+    println(n);
+}

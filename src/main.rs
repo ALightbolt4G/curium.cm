@@ -33,6 +33,51 @@ fn main() {
     }
 }
 
+// ── Imports Resolution ───────────────────────────────────────────────────────
+
+fn resolve_imports(ast: &mut parser::AstNode, visited: &mut std::collections::HashSet<String>, base_dir: &std::path::Path) -> Result<(), String> {
+    if let parser::AstKind::Program(decls) = &mut ast.kind {
+        let mut new_decls = Vec::new();
+        // Take ownership of decls
+        let current_decls = std::mem::take(decls);
+        for decl in current_decls {
+            if let parser::AstKind::ImportDecl { path, .. } = &decl.kind {
+                let str_path = path.replace("\\", "/");
+                let file_name = if str_path.ends_with(".cm") { str_path } else { format!("{}.cm", str_path) };
+                
+                let mut file_path = base_dir.join(&file_name);
+                if !file_path.exists() {
+                    let cwd_path = std::path::Path::new(&file_name);
+                    if cwd_path.exists() {
+                        file_path = cwd_path.to_path_buf();
+                    }
+                }
+                
+                let cannon = std::fs::canonicalize(&file_path).unwrap_or_else(|_| file_path.clone());
+                let cannon_str = cannon.to_string_lossy().to_string();
+                
+                if visited.contains(&cannon_str) { continue; }
+                if !cannon_str.is_empty() { visited.insert(cannon_str.clone()); }
+
+                let source = fs::read_to_string(&file_path).map_err(|e| format!("Cannot read import '{}': {}", file_path.display(), e))?;
+                let tokens = Lexer::tokenize(&source).map_err(|e| format!("Lex error in import '{}': {}", file_path.display(), e))?;
+                let mut imported_ast = Parser::parse(tokens).map_err(|e| format!("Parse error in import '{}': {}", file_path.display(), e))?;
+                
+                let parent_dir = file_path.parent().unwrap_or(std::path::Path::new(""));
+                resolve_imports(&mut imported_ast, visited, parent_dir)?;
+                
+                if let parser::AstKind::Program(imported_decls) = imported_ast.kind {
+                    new_decls.extend(imported_decls);
+                }
+            } else {
+                new_decls.push(decl);
+            }
+        }
+        *decls = new_decls;
+    }
+    Ok(())
+}
+
 // ── Commands ─────────────────────────────────────────────────────────────────
 
 fn cmd_build(matches: &clap::ArgMatches) {
@@ -59,13 +104,25 @@ fn cmd_build(matches: &clap::ArgMatches) {
     };
 
     // Parse
-    let ast = match Parser::parse(tokens) {
+    let mut ast = match Parser::parse(tokens) {
         Ok(a) => a,
         Err(e) => {
             eprintln!("{}", error::format_error(file, 0, 0, &e));
             std::process::exit(1);
         }
     };
+
+    // Resolve Imports
+    let mut visited = std::collections::HashSet::new();
+    let file_path = std::path::Path::new(file);
+    let base_dir = file_path.parent().unwrap_or(std::path::Path::new(""));
+    if let Ok(c) = std::fs::canonicalize(file_path) {
+        visited.insert(c.to_string_lossy().to_string());
+    }
+    if let Err(e) = resolve_imports(&mut ast, &mut visited, base_dir) {
+        eprintln!("{}", error::format_error(file, 0, 0, &e));
+        std::process::exit(1);
+    }
 
     // Type check (warnings only — non-fatal for bootstrap compatibility)
     let (_, type_errors) = type_checker::TypeChecker::check(&ast);
@@ -143,10 +200,21 @@ fn cmd_run(matches: &clap::ArgMatches) {
         std::process::exit(1);
     });
 
-    let ast = Parser::parse(tokens).unwrap_or_else(|e| {
+    let mut ast = Parser::parse(tokens).unwrap_or_else(|e| {
         eprintln!("{}", e);
         std::process::exit(1);
     });
+
+    let mut visited = std::collections::HashSet::new();
+    let file_path = std::path::Path::new(file);
+    let base_dir = file_path.parent().unwrap_or(std::path::Path::new(""));
+    if let Ok(c) = std::fs::canonicalize(file_path) {
+        visited.insert(c.to_string_lossy().to_string());
+    }
+    if let Err(e) = resolve_imports(&mut ast, &mut visited, base_dir) {
+        eprintln!("{}", e);
+        std::process::exit(1);
+    }
 
     let c_code = CGenerator::generate(&ast);
     let c_file = "__curium_run.c";
@@ -200,13 +268,24 @@ fn cmd_check(matches: &clap::ArgMatches) {
         }
     };
 
-    let ast = match Parser::parse(tokens) {
+    let mut ast = match Parser::parse(tokens) {
         Ok(a) => a,
         Err(e) => {
             error::emit_parse_error(&source, file, 0, &e);
             std::process::exit(1);
         }
     };
+
+    let mut visited = std::collections::HashSet::new();
+    let file_path = std::path::Path::new(file);
+    let base_dir = file_path.parent().unwrap_or(std::path::Path::new(""));
+    if let Ok(c) = std::fs::canonicalize(file_path) {
+        visited.insert(c.to_string_lossy().to_string());
+    }
+    if let Err(e) = resolve_imports(&mut ast, &mut visited, base_dir) {
+        eprintln!("error: {}", e);
+        std::process::exit(1);
+    }
 
     // Type check
     let (_, type_errors) = type_checker::TypeChecker::check(&ast);
@@ -509,7 +588,7 @@ fn cmd_test(matches: &clap::ArgMatches) {
             }
         };
 
-        let ast = match Parser::parse(tokens) {
+        let mut ast = match Parser::parse(tokens) {
             Ok(a) => a,
             Err(e) => {
                 println!("  \x1b[31m✗\x1b[0m {} — parse error: {}", file.display(), e);
@@ -517,6 +596,17 @@ fn cmd_test(matches: &clap::ArgMatches) {
                 continue;
             }
         };
+
+        let mut visited = std::collections::HashSet::new();
+        let base_dir = file.parent().unwrap_or(std::path::Path::new(""));
+        if let Ok(c) = std::fs::canonicalize(file) {
+            visited.insert(c.to_string_lossy().to_string());
+        }
+        if let Err(e) = resolve_imports(&mut ast, &mut visited, base_dir) {
+            println!("  \x1b[31m✗\x1b[0m {} — import error: {}", file.display(), e);
+            failed += 1;
+            continue;
+        }
 
         let (_, type_errors) = type_checker::TypeChecker::check(&ast);
         if type_errors.is_empty() {

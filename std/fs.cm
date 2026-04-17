@@ -1,0 +1,42 @@
+// std/fs
+// File system utilities
+
+// Reads a file's entire contents to a string. Returns an empty string if failed.
+fn read_to_string(path: string) -> string {
+    let mut result: string;
+    c {
+        FILE* f = fopen(path->data, "rb");
+        if (!f) {
+            result = curium_string_from("");
+        } else {
+            fseek(f, 0, SEEK_END);
+            long fsize = ftell(f);
+            fseek(f, 0, SEEK_SET);
+
+            char* string_buf = (char*)malloc(fsize + 1);
+            fread(string_buf, 1, fsize, f);
+            fclose(f);
+            string_buf[fsize] = 0;
+
+            result = curium_string_from(string_buf);
+            free(string_buf);
+        }
+    }
+    return result;
+}
+
+// Write string to file, returning 1 on success, 0 on failure.
+fn write_string(path: string, content: string) -> i32 {
+    let mut success: i32 = 0;
+    c {
+        FILE* f = fopen(path->data, "wb");
+        if (f) {
+            size_t written = fwrite(content->data, 1, content->length, f);
+            fclose(f);
+            if (written == content->length) {
+                success = 1;
+            }
+        }
+    }
+    return success;
+}

@@ -117,4 +117,8 @@ UC-031,Phase 5,File I/O Operations,Standard Library,Read/write files for source 
 UC-032,Phase 5,String & Path Utilities,Standard Library,Parse and manipulate paths and string builders,String input,Formatted/joined strings,High,Medium
 UC-033,Phase 5,Dynamic Collections,Standard Library,Use resizable arrays (Vectors) and maps,Types defined,Scalable memory containers,High,High
 UC-034,Phase 5,Process Control,Standard Library,Terminate compilation with specific exit codes,Failure state,Process exits with code,Medium,Low
+UC-035,Phase 6,Package Manager,Ecosystem,Create `cm get` to fetch dependencies,Network access,Dependencies installed in local module repo,High,High
+UC-036,Phase 6,Testing Framework,Ecosystem,Create `cm test` standard harness framework,Code with #[test] annotations,Runs tests and reports results,High,Medium
+UC-037,Phase 6,Language Server (LSP),Ecosystem,Create an LSP using compiler typechecker API,Compiler as library,Hover/autocomplete info provided to IDE,Medium,Very High
+UC-038,Phase 6,Code Formatter,Ecosystem,Create `cm fmt` to consistently format `.cm` files,Unformatted code,Code matches AST standard style,Low,High
 ```

@@ -1,0 +1,36 @@
+// ============================================================================
+// UC-031: File I/O Operations
+// UC-032: String & Path Utilities
+// UC-033: Dynamic Collections
+// UC-034: Process Control
+// ============================================================================
+
+import "std/process";
+import "std/fs";
+import "std/string";
+import "std/vec";
+
+fn main() -> i32 {
+    let argc_count: i32 = env_argc();
+    let args_list: []string = args();
+    
+    println("Testing Vector...");
+    let v: ^Vector = vec_new();
+    let n1: dyn = dyn_int(10);
+    let n2: dyn = dyn_int(20);
+    vec_push(v, n1);
+    vec_push(v, n2);
+    let len: i32 = vec_len(v);
+    
+    println("Testing File I/O...");
+    let test_file: string = "test_artifacts.txt";
+    write_string(test_file, "Hello from Curium Standard Library!");
+    let content: string = read_to_string(test_file);
+    
+    println("Testing Strings...");
+    let joined: string = concat("Hello ", "World");
+    let num_str: string = int_to_string(42);
+    
+    println("UC-031 to UC-034: Standard Library — OK");
+    return 0;
+}

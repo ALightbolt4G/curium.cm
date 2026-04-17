@@ -1,0 +1,71 @@
+// std/vec
+// Dynamic collections (Vector) using dyn as the element type
+
+struct Vector {
+    data: dyn,
+    length: i32,
+    capacity: i32,
+}
+
+// Creates a new, empty Vector
+fn vec_new() -> ^Vector {
+    let mut v: ^Vector;
+    c {
+        struct Vector* vector = (struct Vector*)malloc(sizeof(struct Vector));
+        vector->capacity = 4;
+        vector->length = 0;
+        vector->data.tag = DYN_PTR;
+        vector->data.ptr_val = malloc(vector->capacity * sizeof(curium_dyn_t));
+        v = vector;
+    }
+    return v;
+}
+
+// Appends an element to the back of the Vector
+fn vec_push(v: ^Vector, element: dyn) -> void {
+    c {
+        struct Vector* vector = v;
+        if (vector->length >= vector->capacity) {
+            vector->capacity *= 2;
+            vector->data.ptr_val = realloc(vector->data.ptr_val, vector->capacity * sizeof(curium_dyn_t));
+        }
+        curium_dyn_t* arr = (curium_dyn_t*)vector->data.ptr_val;
+        arr[vector->length] = element;
+        vector->length += 1;
+    }
+}
+
+// Retrieves an element at the given index
+fn vec_get(v: ^Vector, index: i32) -> dyn {
+    let mut result: dyn;
+    c {
+        struct Vector* vector = v;
+        curium_dyn_t* arr = (curium_dyn_t*)vector->data.ptr_val;
+        if (index >= 0 && index < vector->length) {
+            result = arr[index];
+        } else {
+            result.tag = DYN_NULL;
+        }
+    }
+    return result;
+}
+
+// Returns the number of elements in the vector
+fn vec_len(v: ^Vector) -> i32 {
+    let mut len: i32;
+    c {
+        struct Vector* vector = v;
+        len = vector->length;
+    }
+    return len;
+}
+
+// Helpers for dyn
+fn dyn_int(n: i32) -> dyn {
+    let mut d: dyn;
+    c {
+        d.tag = DYN_INT;
+        d.int_val = n;
+    }
+    return d;
+}

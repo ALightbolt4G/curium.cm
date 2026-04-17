@@ -1,0 +1,29 @@
+// std/string
+// String manipulation utilities
+
+fn concat(a: string, b: string) -> string {
+    let mut result: string;
+    c {
+        size_t len_a = a->length;
+        size_t len_b = b->length;
+        curium_string_t* new_str = (curium_string_t*)malloc(sizeof(curium_string_t));
+        new_str->length = len_a + len_b;
+        new_str->capacity = new_str->length + 1;
+        new_str->data = (char*)malloc(new_str->capacity);
+        memcpy(new_str->data, a->data, len_a);
+        memcpy(new_str->data + len_a, b->data, len_b);
+        new_str->data[new_str->length] = '\0';
+        result = new_str;
+    }
+    return result;
+}
+
+fn int_to_string(n: i32) -> string {
+    let mut result: string;
+    c {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%d", n);
+        result = curium_string_from(buf);
+    }
+    return result;
+}

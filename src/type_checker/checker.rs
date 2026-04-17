@@ -743,6 +743,11 @@ impl TypeChecker {
             return true;
         }
 
+        // Dyn is compatible with anything
+        if matches!(expected, Type::Dyn) || matches!(actual, Type::Dyn) {
+            return true;
+        }
+
         // String ↔ Str compatible
         if matches!(
             (expected, actual),

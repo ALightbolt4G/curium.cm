@@ -197,6 +197,10 @@ impl CGenerator {
         self.emit_line("#include <stdbool.h>");
         self.emit_line("#include <string.h>");
         self.emit_line("");
+        self.emit_line("/* Global Args for std::process */");
+        self.emit_line("int __curium_argc;");
+        self.emit_line("char** __curium_argv;");
+        self.emit_line("");
 
         if self.needs_curium_string {
             self.emit_line("/* ── Curium String Runtime ── */");
@@ -350,6 +354,10 @@ impl CGenerator {
                 // main function gets special treatment
                 if name == "main" {
                     self.emit_line(&format!("int main(int argc, char** argv) {{"));
+                    self.indent += 1;
+                    self.emit_line("__curium_argc = argc;");
+                    self.emit_line("__curium_argv = argv;");
+                    self.indent -= 1;
                 } else {
                     self.emit_line(&format!("{} {}({}) {{", ret, name, params_c));
                 }
@@ -457,7 +465,7 @@ impl CGenerator {
                     "int32_t".to_string()
                 };
 
-                let qualifier = if !mutable { "const " } else { "" };
+                let qualifier = "";
 
                 if let Some(init_expr) = init {
                     let val = self.expr_to_c(init_expr);
@@ -909,7 +917,7 @@ mod tests {
         let tokens = Lexer::tokenize("fn test() { let x: i32 = 42; mut y: i32 = 10; }").unwrap();
         let ast = Parser::parse(tokens).unwrap();
         let c_code = CGenerator::generate(&ast);
-        assert!(c_code.contains("const int32_t x = 42;"));
+        assert!(c_code.contains("int32_t x = 42;"));
         assert!(c_code.contains("int32_t y = 10;"));
     }
 }

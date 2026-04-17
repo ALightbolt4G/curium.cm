@@ -1,0 +1,31 @@
+// std/process
+// Core process management and environment access.
+
+// Returns the command-line arguments passed to the program.
+// Using a C polyglot block to allocate and translate from C argv strings.
+fn args() -> []string {
+    let mut args: []string;
+    c {
+        args = (curium_string_t**)malloc(__curium_argc * sizeof(curium_string_t*));
+        for (int i = 0; i < __curium_argc; i++) {
+            args[i] = curium_string_from(__curium_argv[i]);
+        }
+    }
+    return args;
+}
+
+// Returns the number of arguments passed to the program.
+fn env_argc() -> i32 {
+    let mut count: i32 = 0;
+    c {
+        count = __curium_argc;
+    }
+    return count;
+}
+
+// Terminates the current process with the given exit code.
+fn process_exit(code: i32) -> void {
+    c {
+        exit(code);
+    }
+}
