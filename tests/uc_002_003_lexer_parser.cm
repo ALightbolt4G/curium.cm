@@ -1,0 +1,57 @@
+// ============================================================================
+// UC-002: Lex Source File — Token stream validation
+// UC-003: Parse Tokens to AST — All declaration types
+// UC-007: Check Syntax Only — Syntax validation
+// UC-030: Process Attributes — #[attr] parsing
+// ============================================================================
+
+// Attribute on function
+#[hot]
+fn annotated_function() -> i32 {
+    return 42;
+}
+
+// All numeric types
+fn type_showcase() -> void {
+    let a: i8 = 1;
+    let b: i16 = 2;
+    let c: i32 = 3;
+    let d: i64 = 4;
+    let e: u8 = 5;
+    let f: u16 = 6;
+    let g: u32 = 7;
+    let h: u64 = 8;
+    let i: f32 = 1.0;
+    let j: f64 = 2.0;
+    let k: usize = 100;
+    let l: bool = true;
+    let m: char = 'A';
+    let n: string = "hello";
+}
+
+// All operators
+fn operators(a: i32, b: i32) -> i32 {
+    let sum = a + b;
+    let diff = a - b;
+    let prod = a * b;
+    let quot = a / b;
+    let rem = a % b;
+    let eq: bool = a == b;
+    let neq: bool = a != b;
+    let lt: bool = a < b;
+    let gt: bool = a > b;
+    let lte: bool = a <= b;
+    let gte: bool = a >= b;
+    let and: bool = true && false;
+    let or: bool = true || false;
+    let neg = -a;
+    let not: bool = !true;
+    return sum;
+}
+
+fn main() -> i32 {
+    let result: i32 = annotated_function();
+    let x: i32 = operators(10, 3);
+    println("UC-002/003/007/030: Lexer + Parser + Syntax + Attributes — OK");
+    return 0;
+}

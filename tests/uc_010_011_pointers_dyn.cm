@@ -1,0 +1,32 @@
+// ============================================================================
+// UC-010: Resolve Safe Pointers — ^T pointer support
+// UC-011: Process dyn Operators — (AST support)
+// ============================================================================
+
+struct Data {
+    value: i32;
+}
+
+// Pointer types in function signatures
+fn process_ptr(p: ^i32) -> void {
+    // Dereference and address-of are supported
+    let val = ^p;
+}
+
+fn take_ref(x: i32) -> ^i32 {
+    return &x;
+}
+
+// Optional types
+fn maybe_value(flag: bool) -> ?i32 {
+    if flag {
+        return null;
+    }
+    return null;
+}
+
+fn main() -> i32 {
+    let d = Data { value: 42 };
+    println("UC-010/011: Safe Pointers + Dyn Operators — OK");
+    return 0;
+}

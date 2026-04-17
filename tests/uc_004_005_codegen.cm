@@ -1,0 +1,26 @@
+// ============================================================================
+// UC-004: Generate C11 Code — Transpile AST to C11
+// UC-005: Compile C to Binary — Invoke GCC
+// UC-023: Emit C Only — Output transpiled C without compilation
+// ============================================================================
+
+struct Config {
+    width: i32;
+    height: i32;
+    title: string;
+}
+
+fn create_config() -> Config {
+    return Config { width: 800, height: 600, title: "Curium App" };
+}
+
+fn compute_area(w: i32, h: i32) -> i32 {
+    return w * h;
+}
+
+fn main() -> i32 {
+    let cfg = create_config();
+    let area: i32 = compute_area(cfg.width, cfg.height);
+    println("UC-004/005/023: Codegen + Compile + Emit-C — OK");
+    return 0;
+}

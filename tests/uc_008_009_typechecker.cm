@@ -1,0 +1,58 @@
+// ============================================================================
+// UC-008: Type Check AST — Semantic analysis and type inference
+// UC-009: Infer strnum Type — Dual type deduction
+// ============================================================================
+
+// Type inference from initializer
+fn test_inference() -> void {
+    let x = 42;           // Inferred i32
+    let y = 3.14;         // Inferred f64
+    let s = "hello";      // Inferred string
+    let b = true;         // Inferred bool
+    let c = 'Z';          // Inferred char
+}
+
+// Explicit type annotations
+fn test_explicit_types() -> void {
+    let a: i32 = 10;
+    let b: f64 = 2.71828;
+    let c: bool = false;
+    let d: string = "world";
+}
+
+// Mutable vs immutable
+fn test_mutability() -> void {
+    let immutable: i32 = 1;
+    mut counter: i32 = 0;
+    counter = 1;
+    counter += 1;
+    counter -= 1;
+    counter *= 2;
+}
+
+// Function with typed parameters and return
+fn add(a: i32, b: i32) -> i32 {
+    return a + b;
+}
+
+fn greet(name: string) -> void {
+    println(name);
+}
+
+// Numeric promotion
+fn test_promotion() -> void {
+    let a: i32 = 10;
+    let b: i64 = 20;
+    let result = a + b;  // Should promote to i64
+}
+
+fn main() -> i32 {
+    test_inference();
+    test_explicit_types();
+    test_mutability();
+    let sum: i32 = add(3, 4);
+    greet("Curium");
+    test_promotion();
+    println("UC-008/009: Type Checker + Inference — OK");
+    return 0;
+}

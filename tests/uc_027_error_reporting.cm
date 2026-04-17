@@ -1,0 +1,76 @@
+// ============================================================================
+// UC-027: Report Error with Context — Error messages + locations
+// Tests that VALID code doesn't produce errors, exercising error paths
+// ============================================================================
+
+// Control flow completeness
+fn test_all_control_flow() -> i32 {
+    // If / else if / else chain
+    let x: i32 = 5;
+    if x > 10 {
+        println("large");
+    } else if x > 0 {
+        println("small positive");
+    } else {
+        println("non-positive");
+    }
+
+    // While loop
+    mut count: i32 = 0;
+    while count < 3 {
+        count += 1;
+    }
+
+    // For loop with range
+    for i in 0..5 {
+        let doubled = i * 2;
+    }
+
+    // Loop with break/continue
+    mut j: i32 = 0;
+    loop {
+        j += 1;
+        if j == 3 {
+            continue;
+        }
+        if j >= 5 {
+            break;
+        }
+    }
+
+    return 0;
+}
+
+// Struct with impl
+struct Vector2 {
+    x: f64;
+    y: f64;
+}
+
+impl Vector2 {
+    fn length_squared(self) -> f64 {
+        return self.x * self.x + self.y * self.y;
+    }
+
+    fn scale(mut self, factor: f64) -> Vector2 {
+        return Vector2 { x: self.x * factor, y: self.y * factor };
+    }
+}
+
+// Trait declaration
+trait Printable {
+    fn to_string(self) -> string {
+        return "printable";
+    }
+}
+
+// Import declaration
+import "std/io";
+
+fn main() -> i32 {
+    test_all_control_flow();
+    let v = Vector2 { x: 3.0, y: 4.0 };
+    let len2 = Vector2_length_squared(v);
+    println("UC-027: Error Reporting — OK");
+    return 0;
+}

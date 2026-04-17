@@ -363,8 +363,33 @@ impl Lexer {
         let text: String = self.source[start..self.pos].iter().collect();
 
         // Check for `c { ... }` and `cpp { ... }` polyglot blocks
+        // Only trigger at statement positions — not when `c` is a variable
+        // in expression context (e.g. `match c { ... }` should NOT be a CBlock).
+        // Heuristic: polyglot blocks appear at the start of a statement, so the
+        // preceding non-whitespace character should be a statement boundary
+        // (`{`, `}`, `;`) or the identifier should be at column 1.
         if (text == "c" || text == "cpp") && self.peek_after_whitespace() == '{' {
-            return self.lex_polyglot_block(&text, start);
+            let is_stmt_start = if start == 0 {
+                true  // Very beginning of file
+            } else {
+                // Walk backwards to find the preceding non-whitespace character
+                let mut i = start;
+                while i > 0 {
+                    i -= 1;
+                    let prev = self.source[i];
+                    if !matches!(prev, ' ' | '\t' | '\r' | '\n') {
+                        break;
+                    }
+                }
+                if i == 0 && matches!(self.source[0], ' ' | '\t' | '\r' | '\n') {
+                    true  // Only whitespace before
+                } else {
+                    matches!(self.source[i], '{' | '}' | ';')
+                }
+            };
+            if is_stmt_start {
+                return self.lex_polyglot_block(&text, start);
+            }
         }
 
         // Check keyword table

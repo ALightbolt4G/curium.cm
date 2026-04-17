@@ -1,0 +1,82 @@
+// ============================================================================
+// UC-014: Expand Pattern Matching — match statements
+// UC-015: Generate Error Handling — try/catch/throw/finally
+// ============================================================================
+
+enum Color {
+    Red,
+    Green,
+    Blue,
+    Custom(i32, i32, i32),
+}
+
+enum Result {
+    Ok(i32),
+    Err(string),
+}
+
+fn match_color(color: Color) -> string {
+    match color {
+        Color::Red => {
+            return "red";
+        }
+        Color::Green => {
+            return "green";
+        }
+        Color::Blue => {
+            return "blue";
+        }
+        Color::Custom => {
+            return "custom";
+        }
+    }
+}
+
+// Numeric match
+fn classify(n: i32) -> string {
+    match n {
+        0 => { return "zero"; }
+        1 => { return "one"; }
+        _ => { return "other"; }
+    }
+}
+
+// Try / catch / finally
+fn test_error_handling() -> void {
+    try {
+        let x: i32 = 42;
+        println("Inside try block");
+    } catch (e) {
+        println("Caught error");
+    } finally {
+        println("Finally block executed");
+    }
+}
+
+// Try with typed catch
+fn test_typed_catch() -> void {
+    try {
+        println("Trying...");
+    } catch (err: string) {
+        println("String error caught");
+    }
+}
+
+// Throw statement
+fn test_throw() -> void {
+    try {
+        throw "Something went wrong";
+    } catch (e) {
+        println("Caught thrown error");
+    }
+}
+
+fn main() -> i32 {
+    let color_name = match_color(Color::Red);
+    let classification = classify(1);
+    test_error_handling();
+    test_typed_catch();
+    test_throw();
+    println("UC-014/015: Pattern Matching + Error Handling — OK");
+    return 0;
+}

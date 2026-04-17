@@ -1,0 +1,52 @@
+// ============================================================================
+// UC-012: Handle Reactor Blocks — Arena allocator
+// UC-013: Process Polyglot c{} Blocks — Raw C passthrough
+// UC-016: Process spawn Blocks — Concurrency
+// ============================================================================
+
+fn test_reactor_arena() -> void {
+    reactor arena(4096) {
+        let x: i32 = 42;
+        let y: i32 = x + 1;
+        println("Inside arena reactor");
+    }
+}
+
+fn test_reactor_gc() -> void {
+    reactor gc {
+        let data: i32 = 100;
+        println("Inside GC reactor");
+    }
+}
+
+fn test_polyglot_c() -> void {
+    c {
+        // This C code is passed through verbatim
+        int native_val = 42;
+        printf("C block: %d\n", native_val);
+    }
+}
+
+fn test_polyglot_cpp() -> void {
+    cpp {
+        // C++ block
+        int cpp_val = 100;
+    }
+}
+
+fn test_spawn() -> void {
+    spawn {
+        let x: i32 = 1;
+        println("Inside spawn block");
+    }
+}
+
+fn main() -> i32 {
+    test_reactor_arena();
+    test_reactor_gc();
+    test_polyglot_c();
+    test_polyglot_cpp();
+    test_spawn();
+    println("UC-012/013/016: Reactor + Polyglot + Spawn — OK");
+    return 0;
+}
