@@ -74,12 +74,12 @@ fn main() -> i32 {
     println("");
 
     // Demonstrate the compiler's token representation
-    let tok_fn = Token { kind: 40, value: "fn", line: 1 };
-    let tok_main = Token { kind: 1, value: "main", line: 1 };
-    let tok_lparen = Token { kind: 10, value: "(", line: 1 };
-    let tok_rparen = Token { kind: 11, value: ")", line: 1 };
-    let tok_arrow = Token { kind: 31, value: "->", line: 1 };
-    let tok_i32 = Token { kind: 50, value: "i32", line: 1 };
+    let tok_fn: Token = Token { kind: 40, value: "fn", line: 1 };
+    let tok_main: Token = Token { kind: 1, value: "main", line: 1 };
+    let tok_lparen: Token = Token { kind: 10, value: "(", line: 1 };
+    let tok_rparen: Token = Token { kind: 11, value: ")", line: 1 };
+    let tok_arrow: Token = Token { kind: 31, value: "->", line: 1 };
+    let tok_i32: Token = Token { kind: 50, value: "i32", line: 1 };
 
     println("Token stream for 'fn main() -> i32':");
     print_token(tok_fn);

@@ -80,6 +80,11 @@ fn resolve_imports(ast: &mut parser::AstNode, visited: &mut std::collections::Ha
 
 // ── Commands ─────────────────────────────────────────────────────────────────
 
+fn inject_prelude(source: &str) -> String {
+    let prelude = "import \"core/prelude\";\nimport \"std/process\";\nimport \"std/fs\";\nimport \"std/string\";\nimport \"std/vec\";\n";
+    format!("{}{}", prelude, source)
+}
+
 fn cmd_build(matches: &clap::ArgMatches) {
     let file = matches.get_one::<String>("file").unwrap();
     let output = matches.get_one::<String>("output").unwrap();
@@ -87,7 +92,7 @@ fn cmd_build(matches: &clap::ArgMatches) {
     let cc = matches.get_one::<String>("cc").unwrap();
 
     let source = match fs::read_to_string(file) {
-        Ok(s) => s,
+        Ok(s) => inject_prelude(&s),
         Err(e) => {
             eprintln!("{}", error::format_error(file, 0, 0, &format!("Cannot read file: {}", e)));
             std::process::exit(1);
@@ -191,9 +196,10 @@ fn cmd_run(matches: &clap::ArgMatches) {
 
     // Now compile and run
     let source = fs::read_to_string(file).unwrap_or_else(|e| {
-        eprintln!("Cannot read {}: {}", file, e);
+        eprintln!("Cannot read file: {}", e);
         std::process::exit(1);
     });
+    let source = inject_prelude(&source);
 
     let tokens = Lexer::tokenize(&source).unwrap_or_else(|e| {
         eprintln!("{}", e);
@@ -253,7 +259,7 @@ fn cmd_check(matches: &clap::ArgMatches) {
     let file = matches.get_one::<String>("file").unwrap();
 
     let source = match fs::read_to_string(file) {
-        Ok(s) => s,
+        Ok(s) => inject_prelude(&s),
         Err(e) => {
             eprintln!("Cannot read {}: {}", file, e);
             std::process::exit(1);
@@ -314,6 +320,7 @@ fn cmd_dump(matches: &clap::ArgMatches) {
                 eprintln!("Cannot read {}: {}", file, e);
                 std::process::exit(1);
             });
+            let source = inject_prelude(&source);
 
             let tokens = Lexer::tokenize(&source).unwrap_or_else(|e| {
                 eprintln!("{}", e);
@@ -333,6 +340,7 @@ fn cmd_dump(matches: &clap::ArgMatches) {
                 eprintln!("Cannot read {}: {}", file, e);
                 std::process::exit(1);
             });
+            let source = inject_prelude(&source);
 
             let tokens = Lexer::tokenize(&source).unwrap_or_else(|e| {
                 eprintln!("{}", e);
@@ -352,6 +360,7 @@ fn cmd_dump(matches: &clap::ArgMatches) {
                 eprintln!("Cannot read {}: {}", file, e);
                 std::process::exit(1);
             });
+            let source = inject_prelude(&source);
 
             let tokens = Lexer::tokenize(&source).unwrap_or_else(|e| {
                 eprintln!("{}", e);
@@ -571,7 +580,7 @@ fn cmd_test(matches: &clap::ArgMatches) {
 
     for file in &test_files {
         let source = match fs::read_to_string(file) {
-            Ok(s) => s,
+            Ok(s) => inject_prelude(&s),
             Err(_) => {
                 println!("  \x1b[31m✗\x1b[0m {} — cannot read", file.display());
                 failed += 1;

@@ -5,11 +5,6 @@
 // UC-034: Process Control
 // ============================================================================
 
-import "std/process";
-import "std/fs";
-import "std/string";
-import "std/vec";
-
 fn main() -> i32 {
     let argc_count: i32 = env_argc();
     let args_list: []string = args();
