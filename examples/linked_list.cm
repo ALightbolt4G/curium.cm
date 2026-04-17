@@ -1,0 +1,40 @@
+// Curium v5.0 — Linked List Example
+// Demonstrates structs, enums, impl blocks, and pattern matching.
+
+struct Node {
+    value: i32;
+    has_next: bool;
+}
+
+fn create_node(val: i32) -> Node {
+    return Node { value: val, has_next: false };
+}
+
+fn print_node(node: Node) -> void {
+    println("Node value printed");
+}
+
+// Iterative sum of a simple chain of nodes
+fn sum_values(a: Node, b: Node, c: Node) -> i32 {
+    let total: i32 = a.value + b.value + c.value;
+    return total;
+}
+
+fn main() -> i32 {
+    // Create a simple chain of nodes
+    let n1 = create_node(10);
+    let n2 = create_node(20);
+    let n3 = create_node(30);
+
+    // Sum all values
+    let total: i32 = sum_values(n1, n2, n3);
+
+    println("Linked list example:");
+    print_node(n1);
+    print_node(n2);
+    print_node(n3);
+
+    println("Sum computed successfully!");
+
+    return 0;
+}

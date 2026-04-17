@@ -6,6 +6,9 @@ Cargo.lock
 *.c.bak
 hello_out.c
 __curium_run.*
+bootstrap/*.c
+bootstrap/*.exe
+bootstrap_test.*
 
 # IDE
 .vscode/
