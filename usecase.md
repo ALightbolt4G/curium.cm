@@ -35,6 +35,10 @@
 | **UC-028** | All | Track Memory Usage | Compiler | Monitor arena and heap allocations | Runtime tracking enabled | Statistics available via `--stat` | Low | Low |
 | **UC-029** | All | Handle Unicode Identifiers | Lexer | Support non-ASCII in identifiers | UTF-8 source | Correctly tokenized | Medium | Medium |
 | **UC-030** | All | Process Attributes | Parser | Parse `#[attr]` syntax and attach to AST | Valid attribute syntax | Attributes stored on node | Medium | Medium |
+| **UC-031** | Phase 5 | File I/O Operations | Standard Library | Read/write files for source and output generation | FS permissions | File contents loaded/written | Critical | Medium |
+| **UC-032** | Phase 5 | String & Path Utilities | Standard Library | Parse and manipulate paths and string builders | String input | Formatted/joined strings | High | Medium |
+| **UC-033** | Phase 5 | Dynamic Collections | Standard Library | Use resizable arrays (Vectors) and maps | Types defined | Scalable memory containers | High | High |
+| **UC-034** | Phase 5 | Process Control | Standard Library | Terminate compilation with specific exit codes | Failure state | Process exits with code | Medium | Low |
 
 ---
 
@@ -42,15 +46,15 @@
 
 | **Metric** | **Count** |
 |------------|-----------|
-| Total Use Cases | 30 |
-| Critical Priority | 8 |
-| High Priority | 12 |
-| Medium Priority | 8 |
+| Total Use Cases | 34 |
+| Critical Priority | 9 |
+| High Priority | 14 |
+| Medium Priority | 9 |
 | Low Priority | 2 |
 | Very High Complexity | 3 |
-| High Complexity | 9 |
-| Medium Complexity | 9 |
-| Low Complexity | 9 |
+| High Complexity | 10 |
+| Medium Complexity | 11 |
+| Low Complexity | 10 |
 
 ---
 
@@ -62,6 +66,7 @@
 | Phase 2 (Full Features) | UC-008 to UC-016 | 9 |
 | Phase 3 (CLI & Tools) | UC-017 to UC-023 | 7 |
 | Phase 4 (Self-Hosting) | UC-024 to UC-026 | 3 |
+| Phase 5 (Standard Library) | UC-031 to UC-034 | 4 |
 | Cross-Cutting | UC-027 to UC-030 | 4 |
 
 ---
@@ -108,7 +113,8 @@ UC-027,All,Report Error with Context,Compiler,Display beautiful error with sourc
 UC-028,All,Track Memory Usage,Compiler,Monitor arena and heap allocations,Runtime tracking enabled,Statistics available via --stat,Low,Low
 UC-029,All,Handle Unicode Identifiers,Lexer,Support non-ASCII in identifiers,UTF-8 source,Correctly tokenized,Medium,Medium
 UC-030,All,Process Attributes,Parser,Parse #[attr] syntax and attach to AST,Valid attribute syntax,Attributes stored on node,Medium,Medium
+UC-031,Phase 5,File I/O Operations,Standard Library,Read/write files for source and output generation,FS permissions,File contents loaded/written,Critical,Medium
+UC-032,Phase 5,String & Path Utilities,Standard Library,Parse and manipulate paths and string builders,String input,Formatted/joined strings,High,Medium
+UC-033,Phase 5,Dynamic Collections,Standard Library,Use resizable arrays (Vectors) and maps,Types defined,Scalable memory containers,High,High
+UC-034,Phase 5,Process Control,Standard Library,Terminate compilation with specific exit codes,Failure state,Process exits with code,Medium,Low
 ```
-
----
-
