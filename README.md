@@ -263,6 +263,8 @@ src/
 | **Phase 2** | Full v5.0 Feature Support — Type Checker, Runtime | ✅ Complete |
 | **Phase 3** | CLI Implementation — fmt, test, packages, doctor | ✅ Complete |
 | **Phase 4** | Self-Hosting Path — compiler.cm, bootstrap verification | ✅ Complete |
+| **Phase 5** | Standard Library (`doc/stdlib.md`) — Process, FS, Vec, String globally available | ✅ Complete |
+| **Phase 6** | Ecosystem Utilities — Package Manager (`cm get`), LSP, Test Harness, Formatter | 🔄 In Progress |
 
 ## Self-Hosting Bootstrap
 
