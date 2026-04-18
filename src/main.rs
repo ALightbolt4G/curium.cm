@@ -4,6 +4,8 @@ mod codegen;
 mod error;
 mod cli;
 mod type_checker;
+mod formatter;
+mod lsp;
 
 use std::fs;
 use std::process::Command as ProcessCommand;
@@ -23,7 +25,8 @@ fn main() {
         Some(("init", sub)) => cmd_init(sub),
         Some(("fmt", sub)) => cmd_fmt(sub),
         Some(("test", sub)) => cmd_test(sub),
-        Some(("packages", sub)) => cmd_packages(sub),
+        Some(("get", sub)) => cmd_get(sub),
+        Some(("lsp", _)) => cmd_lsp(),
         Some(("doctor", _)) => cmd_doctor(),
         _ => {
             print_banner();
@@ -50,6 +53,12 @@ fn resolve_imports(ast: &mut parser::AstNode, visited: &mut std::collections::Ha
                     let cwd_path = std::path::Path::new(&file_name);
                     if cwd_path.exists() {
                         file_path = cwd_path.to_path_buf();
+                    } else {
+                        // Fallback to packages/ directory
+                        let pkg_path = std::path::Path::new("packages").join(&file_name);
+                        if pkg_path.exists() {
+                            file_path = pkg_path;
+                        }
                     }
                 }
                 
@@ -79,6 +88,10 @@ fn resolve_imports(ast: &mut parser::AstNode, visited: &mut std::collections::Ha
 }
 
 // ── Commands ─────────────────────────────────────────────────────────────────
+
+fn ensure_output_dir() {
+    let _ = fs::create_dir_all("output");
+}
 
 fn inject_prelude(source: &str) -> String {
     let prelude = "import \"core/prelude\";\nimport \"std/process\";\nimport \"std/fs\";\nimport \"std/string\";\nimport \"std/vec\";\n";
@@ -130,7 +143,7 @@ fn cmd_build(matches: &clap::ArgMatches) {
     }
 
     // Type check (warnings only — non-fatal for bootstrap compatibility)
-    let (_, type_errors) = type_checker::TypeChecker::check(&ast);
+    let (_, type_errors, _) = type_checker::TypeChecker::check(&ast);
     for err in &type_errors {
         eprintln!(
             "\x1b[1;33mwarning\x1b[0m: {} ({}:{}:{})",
@@ -141,7 +154,8 @@ fn cmd_build(matches: &clap::ArgMatches) {
     // Codegen
     let c_code = CGenerator::generate(&ast);
 
-    let c_file = format!("{}.c", output);
+    ensure_output_dir();
+    let c_file = format!("output/{}.c", output);
     if let Err(e) = fs::write(&c_file, &c_code) {
         eprintln!("{}", error::format_error(file, 0, 0, &format!("Cannot write output: {}", e)));
         std::process::exit(1);
@@ -154,9 +168,9 @@ fn cmd_build(matches: &clap::ArgMatches) {
 
     // Compile with C compiler
     let out_exe = if cfg!(windows) {
-        format!("{}.exe", output)
+        format!("output/{}.exe", output)
     } else {
-        output.to_string()
+        format!("output/{}", output)
     };
 
     let standalone = matches.get_flag("standalone");
@@ -229,9 +243,10 @@ fn cmd_run(matches: &clap::ArgMatches) {
         std::process::exit(1);
     }
 
+    ensure_output_dir();
     let c_code = CGenerator::generate(&ast);
-    let c_file = "__curium_run.c";
-    let exe_file = if cfg!(windows) { "__curium_run.exe" } else { "__curium_run" };
+    let c_file = "output/__curium_run.c";
+    let exe_file = if cfg!(windows) { "output/__curium_run.exe" } else { "output/__curium_run" };
 
     fs::write(c_file, &c_code).unwrap();
 
@@ -301,7 +316,7 @@ fn cmd_check(matches: &clap::ArgMatches) {
     }
 
     // Type check
-    let (_, type_errors) = type_checker::TypeChecker::check(&ast);
+    let (_, type_errors, _) = type_checker::TypeChecker::check(&ast);
     if type_errors.is_empty() {
         println!("\x1b[1;32m✓\x1b[0m {} — no errors", file);
     } else {
@@ -379,7 +394,7 @@ fn cmd_dump(matches: &clap::ArgMatches) {
                 std::process::exit(1);
             });
 
-            let (symbols, errors) = type_checker::TypeChecker::check(&ast);
+            let (symbols, errors, _) = type_checker::TypeChecker::check(&ast);
             println!("\x1b[1;36m── Symbol Table ──\x1b[0m");
             // Print symbols from the global scope
             for sym in symbols.global_symbols() {
@@ -502,30 +517,23 @@ fn format_file(path: &std::path::Path) {
         }
     };
 
-    // Basic formatting: normalize indentation and trailing whitespace
-    let mut formatted = String::new();
-    let mut indent_level: i32 = 0;
-
-    for line in source.lines() {
-        let trimmed = line.trim();
-        if trimmed.is_empty() {
-            formatted.push('\n');
-            continue;
+    let tokens = match Lexer::tokenize(&source) {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("Lex error in {}: {}", path.display(), e);
+            return;
         }
+    };
 
-        // Decrease indent before closing braces
-        if trimmed.starts_with('}') {
-            indent_level = (indent_level - 1).max(0);
+    let ast = match Parser::parse(tokens) {
+        Ok(a) => a,
+        Err(e) => {
+            eprintln!("Parse error in {}: {}", path.display(), e);
+            return;
         }
+    };
 
-        let indent = "    ".repeat(indent_level as usize);
-        formatted.push_str(&format!("{}{}\n", indent, trimmed));
-
-        // Increase indent after opening braces
-        if trimmed.ends_with('{') {
-            indent_level += 1;
-        }
-    }
+    let formatted = formatter::Formatter::format(&ast);
 
     if formatted != source {
         if let Err(e) = fs::write(path, &formatted) {
@@ -624,20 +632,116 @@ fn cmd_test(matches: &clap::ArgMatches) {
             continue;
         }
 
-        let (_, type_errors) = type_checker::TypeChecker::check(&ast);
-        if type_errors.is_empty() {
-            println!("  \x1b[32m✓\x1b[0m {}", file.display());
-            passed += 1;
-        } else {
-            println!(
-                "  \x1b[31m✗\x1b[0m {} — {} type error(s)",
-                file.display(),
-                type_errors.len()
-            );
+        let (_, type_errors, _) = type_checker::TypeChecker::check(&ast);
+        if !type_errors.is_empty() {
+            println!("  \x1b[31m✗\x1b[0m {} — {} type error(s)", file.display(), type_errors.len());
             for err in &type_errors {
                 println!("      {}", err.message);
             }
             failed += 1;
+            continue;
+        }
+
+        // Discover tests
+        let mut test_fns = Vec::new();
+        if let parser::AstKind::Program(decls) = &ast.kind {
+            for decl in decls {
+                if let parser::AstKind::FnDecl { name, attributes, .. } = &decl.kind {
+                    if attributes.contains(&"test".to_string()) {
+                        test_fns.push(name.clone());
+                    }
+                } else if let parser::AstKind::ImplBlock { target, methods, .. } = &decl.kind {
+                    for method in methods {
+                        if let parser::AstKind::FnDecl { name, attributes, .. } = &method.kind {
+                            if attributes.contains(&"test".to_string()) {
+                                test_fns.push(format!("{}_{}", target, name));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if test_fns.is_empty() {
+            println!("  \x1b[90m-\x1b[0m {} (no tests)", file.display());
+            passed += 1; // Count files with no tests as "passed" or just skip? 
+                         // Let's count them as passed for simplicity in this loop.
+            continue;
+        }
+
+        // Generate test runner
+        let mut c_code = CGenerator::generate(&ast);
+        
+        // Rename main if it exists to avoid collision
+        c_code = c_code.replace("int main(int argc, char** argv)", "int __curium_user_main(int argc, char** argv)");
+
+        // Append runner main
+        c_code.push_str("\n\n/* ── Test Runner ── */\n");
+        c_code.push_str("int main(int argc, char** argv) {\n");
+        c_code.push_str("    int fail_count = 0;\n");
+        c_code.push_str(&format!("    printf(\"  \x1b[1;36mRunning {} internal tests...\x1b[0m\\n\");\n", test_fns.len()));
+        
+        for tfn in &test_fns {
+            c_code.push_str(&format!("    printf(\"    test %s ... \", \"{}\");\n", tfn));
+            c_code.push_str("    fflush(stdout);\n");
+            // We'll use a simple approach: if it returns, it passed. 
+            // In a real harness, we'd catch signals/panics.
+            c_code.push_str(&format!("    {}( );\n", tfn));
+            c_code.push_str("    printf(\"\x1b[32mOK\x1b[0m\\n\");\n");
+        }
+        
+        c_code.push_str("    return 0;\n");
+        c_code.push_str("}\n");
+
+        // Compile and run
+        ensure_output_dir();
+        let c_file = "output/__curium_test.c";
+        let exe_file = if cfg!(windows) { "output/__curium_test.exe" } else { "output/__curium_test" };
+        
+        fs::write(c_file, c_code).unwrap();
+        
+        let compile = ProcessCommand::new("gcc")
+            .args([c_file, "-o", "output/__curium_test", "-lm"])
+            .output();
+
+        match compile {
+            Ok(out) if out.status.success() => {
+                let run_path = if cfg!(windows) { format!(".\\{}", exe_file.replace("/", "\\")) } else { format!("./{}", exe_file) };
+                let run = ProcessCommand::new(run_path).output();
+                match run {
+                    Ok(run_out) => {
+                        if run_out.status.success() {
+                            println!("  \x1b[32m✓\x1b[0m {}", file.display());
+                            passed += 1;
+                        } else {
+                            println!("  \x1b[31m✗\x1b[0m {} — Test execution failed", file.display());
+                            print!("{}", String::from_utf8_lossy(&run_out.stdout));
+                            eprintln!("{}", String::from_utf8_lossy(&run_out.stderr));
+                            failed += 1;
+                        }
+                    }
+                    Err(e) => {
+                        println!("  \x1b[31m✗\x1b[0m {} — Failed to run test: {}", file.display(), e);
+                        failed += 1;
+                    }
+                }
+            }
+            Ok(out) => {
+                println!("  \x1b[31m✗\x1b[0m {} — Compilation failed", file.display());
+                println!("{}", String::from_utf8_lossy(&out.stderr));
+                failed += 1;
+            }
+            Err(e) => {
+                println!("  \x1b[31m✗\x1b[0m {} — Failed to invoke gcc: {}", file.display(), e);
+                failed += 1;
+            }
+        }
+
+        // Clean up
+        let _ = fs::remove_file(c_file);
+        let _ = fs::remove_file("output/__curium_test");
+        if cfg!(windows) {
+            let _ = fs::remove_file("output/__curium_test.exe");
         }
     }
 
@@ -656,60 +760,51 @@ fn cmd_test(matches: &clap::ArgMatches) {
     }
 }
 
-fn cmd_packages(matches: &clap::ArgMatches) {
-    match matches.subcommand() {
-        Some(("install", sub)) => {
-            let pkg = sub.get_one::<String>("package").unwrap();
-            println!("\x1b[1;36m📦 Installing '{}'...\x1b[0m", pkg);
+fn cmd_get(matches: &clap::ArgMatches) {
+    let pkg = matches.get_one::<String>("package").unwrap();
+    println!("\x1b[1;36m📦 Fetching '{}'...\x1b[0m", pkg);
 
-            // Create packages directory
-            let pkg_dir = std::path::Path::new("packages");
-            fs::create_dir_all(pkg_dir).ok();
+    let pkg_parts: Vec<&str> = pkg.split('/').collect();
+    if pkg_parts.len() != 2 && pkg_parts.len() != 3 {
+        eprintln!("\x1b[1;31m✗\x1b[0m Invalid package format. Use <owner>/<repo> or github.com/<owner>/<repo>");
+        std::process::exit(1);
+    }
+
+    let (owner, repo) = if pkg_parts.len() == 2 {
+        (pkg_parts[0], pkg_parts[1])
+    } else {
+        (pkg_parts[1], pkg_parts[2])
+    };
+
+    let repo_url = format!("https://github.com/{}/{}.git", owner, repo);
+    let pkg_dir = std::path::Path::new("packages");
+    fs::create_dir_all(pkg_dir).ok();
+
+    let target_dir = pkg_dir.join(repo);
+    
+    if target_dir.exists() {
+        println!("  \x1b[33m!\x1b[0m Package '{}' is already installed at packages/{}", repo, repo);
+        return;
+    }
+
+    let status = std::process::Command::new("git")
+        .args(["clone", "--depth", "1", &repo_url, target_dir.to_str().unwrap()])
+        .status();
+
+    match status {
+        Ok(s) if s.success() => {
+            println!("  \x1b[32m✓\x1b[0m Successfully installed '{}'", repo);
 
             // Create a manifest entry
             let manifest = std::path::Path::new("curium.json");
             if manifest.exists() {
-                println!("  \x1b[32m✓\x1b[0m Added '{}' to dependencies", pkg);
-                println!("  \x1b[33m!\x1b[0m Package registry not yet available");
-                println!("    Place package source in packages/{}/", pkg);
-            } else {
-                println!("  \x1b[33m!\x1b[0m No curium.json found. Run 'cm init' first.");
-            }
-        }
-        Some(("remove", sub)) => {
-            let pkg = sub.get_one::<String>("package").unwrap();
-            let pkg_path = std::path::Path::new("packages").join(pkg);
-            if pkg_path.exists() {
-                fs::remove_dir_all(&pkg_path).ok();
-                println!("\x1b[1;32m✓\x1b[0m Removed '{}'", pkg);
-            } else {
-                println!("\x1b[1;33m!\x1b[0m Package '{}' not installed", pkg);
-            }
-        }
-        Some(("list", _)) => {
-            let pkg_dir = std::path::Path::new("packages");
-            if pkg_dir.exists() {
-                let entries: Vec<_> = fs::read_dir(pkg_dir)
-                    .into_iter()
-                    .flatten()
-                    .flatten()
-                    .filter(|e| e.path().is_dir())
-                    .collect();
-
-                if entries.is_empty() {
-                    println!("\x1b[90mNo packages installed\x1b[0m");
-                } else {
-                    println!("\x1b[1;36m── Installed Packages ──\x1b[0m");
-                    for entry in entries {
-                        println!("  📦 {}", entry.file_name().to_string_lossy());
-                    }
-                }
-            } else {
-                println!("\x1b[90mNo packages directory\x1b[0m");
+                // In a full implementation, we'd append cleanly to the JSON.
+                println!("  \x1b[90mNote: Automatic curium.json dependency tracking coming soon.\x1b[0m");
             }
         }
         _ => {
-            eprintln!("Usage: cm packages <install|remove|list>");
+            eprintln!("  \x1b[31m✗\x1b[0m Failed to clone package '{}' via git", repo);
+            std::process::exit(1);
         }
     }
 }
@@ -725,7 +820,7 @@ fn print_ast(node: &parser::AstNode, depth: usize) {
             }
             println!("{})", indent);
         }
-        AstKind::FnDecl { name, params, return_type, body, .. } => {
+        AstKind::FnDecl { name, params, return_type, body, attributes, .. } => {
             let ret = return_type
                 .as_ref()
                 .map(|t| format!(" -> {}", t))
@@ -735,7 +830,12 @@ fn print_ast(node: &parser::AstNode, depth: usize) {
                 .map(|p| format!("{}: {}", p.name, p.ty))
                 .collect::<Vec<_>>()
                 .join(", ");
-            println!("{}(FnDecl \"{}\" ({}){}",indent, name, params_str, ret);
+            let attr_str = if attributes.is_empty() {
+                "".to_string()
+            } else {
+                format!(" #[{}]", attributes.join(", "))
+            };
+            println!("{}(FnDecl \"{}\" ({}){}{}", indent, name, params_str, ret, attr_str);
             print_ast(body, depth + 1);
             println!("{})", indent);
         }
@@ -877,6 +977,14 @@ fn print_ast(node: &parser::AstNode, depth: usize) {
         AstKind::CBlock(code) => println!("{}(CBlock \"...\")", indent),
         AstKind::ImportDecl { path, .. } => println!("{}(Import \"{}\")", indent, path),
         _ => println!("{}(<node {:?}>)", indent, std::mem::discriminant(&node.kind)),
+    }
+}
+
+fn cmd_lsp() {
+    let mut server = lsp::LspServer::new();
+    if let Err(e) = server.run() {
+        eprintln!("LSP Error: {}", e);
+        std::process::exit(1);
     }
 }
 

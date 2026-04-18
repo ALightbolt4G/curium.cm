@@ -2,13 +2,17 @@
 /target/
 Cargo.lock
 
-# Generated C output
-*.c.bak
-hello_out.c
-__curium_run.*
-bootstrap/*.c
-bootstrap/*.exe
-bootstrap_test.*
+# Generated output
+/output/
+/curium.exe
+/curium.exe.c
+/output.exe
+/output.c
+/standalone_test.exe.c
+/test_attr.cm
+/__curium_test*
+/__curium_run*
+/test_fmt.cm
 
 # IDE
 .vscode/

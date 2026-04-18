@@ -137,31 +137,17 @@ pub fn build_cli() -> Command {
                 .about("Diagnose project health and environment"),
         )
         .subcommand(
-            Command::new("packages")
-                .about("Manage Curium packages")
-                .subcommand(
-                    Command::new("install")
-                        .about("Install a package")
-                        .arg(
-                            Arg::new("package")
-                                .help("Package name (e.g. std/json)")
-                                .required(true)
-                                .index(1),
-                        ),
-                )
-                .subcommand(
-                    Command::new("remove")
-                        .about("Remove a package")
-                        .arg(
-                            Arg::new("package")
-                                .help("Package name to remove")
-                                .required(true)
-                                .index(1),
-                        ),
-                )
-                .subcommand(
-                    Command::new("list")
-                        .about("List installed packages"),
+            Command::new("get")
+                .about("Fetch and install a remote Curium package via Git")
+                .arg(
+                    Arg::new("package")
+                        .help("Package URL or GitHub repository (e.g. github.com/user/pkg)")
+                        .required(true)
+                        .index(1),
                 ),
+        )
+        .subcommand(
+            Command::new("lsp")
+                .about("Start the Curium Language Server (LSP)"),
         )
 }

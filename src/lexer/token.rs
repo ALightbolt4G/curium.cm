@@ -1,7 +1,7 @@
 use std::fmt;
 
 /// Represents a source span for error reporting.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Span {
     pub start: usize,
     pub end: usize,

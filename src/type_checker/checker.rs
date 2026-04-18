@@ -1,5 +1,7 @@
 use crate::parser::ast::*;
+use crate::lexer::Span;
 use super::symbol_table::{Symbol, SymbolKind, SymbolTable, ScopeKind};
+use std::collections::HashMap;
 
 /// Type errors collected during checking.
 #[derive(Debug, Clone)]
@@ -13,6 +15,7 @@ pub struct TypeError {
 pub struct TypeChecker {
     pub symbols: SymbolTable,
     pub errors: Vec<TypeError>,
+    pub node_types: HashMap<Span, Type>,
     current_return_type: Option<Type>,
 }
 
@@ -21,15 +24,16 @@ impl TypeChecker {
         Self {
             symbols: SymbolTable::new(),
             errors: Vec::new(),
+            node_types: HashMap::new(),
             current_return_type: None,
         }
     }
 
     /// Type check the entire program.
-    pub fn check(ast: &AstNode) -> (SymbolTable, Vec<TypeError>) {
+    pub fn check(ast: &AstNode) -> (SymbolTable, Vec<TypeError>, HashMap<Span, Type>) {
         let mut checker = TypeChecker::new();
         checker.check_node(ast);
-        (checker.symbols, checker.errors)
+        (checker.symbols, checker.errors, checker.node_types)
     }
 
     fn error(&mut self, span: &crate::lexer::Span, msg: &str) {
@@ -463,7 +467,7 @@ impl TypeChecker {
     // ── Expression type inference ────────────────────────────────────────
 
     fn infer_expr(&mut self, node: &AstNode) -> Type {
-        match &node.kind {
+        let ty = match &node.kind {
             AstKind::NumberLiteral(n) => {
                 if n.contains('.') {
                     Type::F64
@@ -670,7 +674,9 @@ impl TypeChecker {
             }
 
             _ => Type::Inferred,
-        }
+        };
+        self.node_types.insert(node.span, ty.clone());
+        ty
     }
 
     // ── Binary operator type rules ───────────────────────────────────────
@@ -814,7 +820,7 @@ mod tests {
     fn check_source(src: &str) -> Vec<TypeError> {
         let tokens = Lexer::tokenize(src).unwrap();
         let ast = Parser::parse(tokens).unwrap();
-        let (_, errors) = TypeChecker::check(&ast);
+        let (_, errors, _) = TypeChecker::check(&ast);
         errors
     }
 

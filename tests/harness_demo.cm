@@ -1,0 +1,14 @@
+#[test]
+fn test_pass() {
+    println("This test should pass!");
+}
+
+#[test]
+fn test_fail() {
+    println("This test should fail via exit!");
+    c { exit(1); }
+}
+
+fn main() {
+    println("Original main should be skipped or renamed");
+}

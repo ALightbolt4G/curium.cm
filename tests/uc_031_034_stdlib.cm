@@ -26,6 +26,6 @@ fn main() -> i32 {
     let joined: string = concat("Hello ", "World");
     let num_str: string = int_to_string(42);
     
-    println("UC-031 to UC-034: Standard Library — OK");
+    println("UC-031 to UC-034: Standard Library — OK"); 
     return 0;
 }
