@@ -140,7 +140,7 @@ impl LspServer {
                 }
             }
             AstKind::FnDecl { params, body, .. } => {
-                for p in params {
+                for _p in params {
                     // Params are just members of FnDecl in our AST, they don't have their own AstNode wrapping usually
                     // but we can check their Spans if they have them.
                     // For now, check body.

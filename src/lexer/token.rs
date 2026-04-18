@@ -185,6 +185,7 @@ pub enum TokenKind {
 
 impl TokenKind {
     /// Returns `true` if this token is a keyword.
+    #[allow(dead_code)]
     pub fn is_keyword(&self) -> bool {
         matches!(
             self,
@@ -429,6 +430,7 @@ impl Token {
     }
 
     /// Returns `true` if the token is the EOF sentinel.
+    #[allow(dead_code)]
     pub fn is_eof(&self) -> bool {
         self.kind == TokenKind::Eof
     }

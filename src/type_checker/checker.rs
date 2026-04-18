@@ -58,7 +58,7 @@ impl TypeChecker {
             }
 
             AstKind::FnDecl {
-                name,
+                name: _,
                 params,
                 return_type,
                 body,
@@ -84,11 +84,11 @@ impl TypeChecker {
                 self.current_return_type = prev_return;
             }
 
-            AstKind::StructDecl { name, fields, .. } => {
+            AstKind::StructDecl { name: _, fields: _, .. } => {
                 // Already registered in first pass
             }
 
-            AstKind::EnumDecl { name, variants, .. } => {
+            AstKind::EnumDecl { name: _, variants: _, .. } => {
                 // Already registered in first pass
             }
 

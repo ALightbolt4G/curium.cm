@@ -1,0 +1,3 @@
+[submodule "packages/curium.cm"]
+	path = packages/curium.cm
+	url = https://github.com/ALightbolt4G/curium.cm.git

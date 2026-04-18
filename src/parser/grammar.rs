@@ -612,6 +612,10 @@ impl Parser {
 
     fn parse_pattern(&mut self) -> Result<Pattern, String> {
         match &self.peek().kind {
+            TokenKind::Identifier(s) if s == "_" => {
+                self.advance();
+                Ok(Pattern::Wildcard)
+            }
             TokenKind::Identifier(_) => {
                 let name = self.expect_identifier()?;
 
@@ -646,20 +650,7 @@ impl Parser {
                 let expr = self.parse_primary()?;
                 Ok(Pattern::Literal(Box::new(expr)))
             }
-            TokenKind::Identifier(s) if s == "_" => {
-                self.advance();
-                Ok(Pattern::Wildcard)
-            }
-            _ => {
-                // Check for `_` wildcard
-                if let TokenKind::Identifier(s) = &self.peek().kind {
-                    if s == "_" {
-                        self.advance();
-                        return Ok(Pattern::Wildcard);
-                    }
-                }
-                Err(self.error(&format!("Expected pattern, found '{}'", self.peek().kind)))
-            }
+            _ => Err(self.error(&format!("Expected pattern, found '{}'", self.peek().kind))),
         }
     }
 

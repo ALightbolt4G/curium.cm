@@ -37,9 +37,11 @@ pub enum SymbolKind {
     Enum {
         variants: Vec<(String, Vec<Type>)>,
     },
+    #[allow(dead_code)]
     Trait {
         methods: Vec<(String, Vec<Type>, Type)>,
     },
+    #[allow(dead_code)]
     Method,
     Parameter,
 }
@@ -138,6 +140,7 @@ impl SymbolTable {
     }
 
     /// Check if we're inside a reactor block.
+    #[allow(dead_code)]
     pub fn in_reactor(&self) -> bool {
         self.scopes
             .iter()
@@ -146,6 +149,7 @@ impl SymbolTable {
     }
 
     /// Get the current function's return type (if inside one).
+    #[allow(dead_code)]
     pub fn current_function_return_type(&self) -> Option<Type> {
         for scope in self.scopes.iter().rev() {
             if scope.kind == ScopeKind::Function {
@@ -157,10 +161,12 @@ impl SymbolTable {
         None
     }
 
+    #[allow(dead_code)]
     pub fn current_scope_kind(&self) -> &ScopeKind {
         &self.scopes.last().unwrap().kind
     }
 
+    #[allow(dead_code)]
     pub fn depth(&self) -> usize {
         self.scopes.len()
     }

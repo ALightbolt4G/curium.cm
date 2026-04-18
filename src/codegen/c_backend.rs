@@ -4,6 +4,7 @@ use crate::parser::ast::*;
 pub struct CGenerator {
     output: String,
     indent: usize,
+    #[allow(dead_code)]
     forward_decls: Vec<String>,
     needs_curium_string: bool,
     needs_curium_arena: bool,
@@ -456,7 +457,7 @@ impl CGenerator {
                 }
             }
 
-            AstKind::LetDecl { name, type_annotation, init, mutable } => {
+            AstKind::LetDecl { name, type_annotation, init, mutable: _ } => {
                 let ty = if let Some(ty) = type_annotation {
                     self.type_to_c(ty)
                 } else if let Some(init) = init {

@@ -974,7 +974,7 @@ fn print_ast(node: &parser::AstNode, depth: usize) {
         AstKind::BoolLiteral(b) => println!("{}(Bool {})", indent, b),
         AstKind::NullLiteral => println!("{}(Null)", indent),
         AstKind::SelfLiteral => println!("{}(Self)", indent),
-        AstKind::CBlock(code) => println!("{}(CBlock \"...\")", indent),
+        AstKind::CBlock(_code) => println!("{}(CBlock \"...\")", indent),
         AstKind::ImportDecl { path, .. } => println!("{}(Import \"{}\")", indent, path),
         _ => println!("{}(<node {:?}>)", indent, std::mem::discriminant(&node.kind)),
     }

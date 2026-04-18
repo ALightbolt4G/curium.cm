@@ -1,4 +1,4 @@
-use crate::parser::ast::{AstNode, AstKind, Type};
+use crate::parser::ast::{AstNode, AstKind};
 
 pub struct Formatter {
     output: String,

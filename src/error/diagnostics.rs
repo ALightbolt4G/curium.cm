@@ -15,6 +15,7 @@ pub fn emit_parse_error(source: &str, filename: &str, offset: usize, message: &s
 }
 
 /// Emit a type mismatch error.
+#[allow(dead_code)]
 pub fn emit_type_error(
     source: &str,
     filename: &str,
@@ -41,6 +42,7 @@ pub fn emit_type_error(
 }
 
 /// Emit a warning.
+#[allow(dead_code)]
 pub fn emit_warning(source: &str, filename: &str, offset: usize, end: usize, message: &str) {
     Report::build(ReportKind::Warning, filename, offset)
         .with_message(message)

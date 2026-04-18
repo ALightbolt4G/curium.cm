@@ -25,6 +25,7 @@ pub enum Type {
     Strnum,
     Ptr(Box<Type>),
     Array(Box<Type>),
+    #[allow(dead_code)]
     Slice(Box<Type>),
     Named(String),
     Generic(String, Vec<Type>),
@@ -136,6 +137,7 @@ pub enum Pattern {
     Identifier(String),
     EnumVariant {
         path: Vec<String>,
+        #[allow(dead_code)]
         bindings: Vec<String>,
     },
     Wildcard,
@@ -268,10 +270,12 @@ pub enum AstKind {
         variants: Vec<EnumVariant>,
         is_pub: bool,
     },
+    #[allow(dead_code)]
     UnionDecl {
         name: String,
         fields: Vec<Field>,
     },
+    #[allow(dead_code)]
     TraitDecl {
         name: String,
         methods: Vec<AstNode>,
@@ -286,6 +290,7 @@ pub enum AstKind {
         path: String,
         alias: Option<String>,
     },
+    #[allow(dead_code)]
     ModuleDecl {
         name: String,
     },
@@ -370,12 +375,14 @@ pub enum AstKind {
     },
     ArrayLiteral(Vec<AstNode>),
     PathExpr(Vec<String>),
+    #[allow(dead_code)]
     CastExpr {
         expr: Box<AstNode>,
         target_type: Type,
     },
     TryExpr(Box<AstNode>), // expr?
 
+    #[allow(dead_code)]
     DynOperator {
         op_var: Box<AstNode>,
         cases: Vec<(Box<AstNode>, Box<AstNode>)>,
