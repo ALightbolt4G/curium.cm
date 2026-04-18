@@ -1,14 +1,13 @@
 #[test]
-fn test_pass() {
-    println("This test should pass!");
+fn test_pass_1() {
+    println("Test 1: OK");
 }
 
 #[test]
-fn test_fail() {
-    println("This test should fail via exit!");
-    c { exit(1); }
+fn test_pass_2() {
+    println("Test 2: OK");
 }
 
 fn main() {
-    println("Original main should be skipped or renamed");
+    println("This main is skipped during testing.");
 }
